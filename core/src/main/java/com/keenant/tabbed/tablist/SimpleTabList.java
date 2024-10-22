@@ -2,7 +2,9 @@ package com.keenant.tabbed.tablist;
 
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
 import com.google.common.base.Preconditions;
 import com.keenant.tabbed.Tabbed;
 import com.keenant.tabbed.item.TabItem;
@@ -10,6 +12,7 @@ import com.keenant.tabbed.util.Packets;
 import com.keenant.tabbed.util.Skin;
 
 import net.kyori.adventure.text.Component;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -123,8 +126,7 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
         for (Entry<Integer,TabItem> entry : items.entrySet())
             validateIndex(entry.getKey());
 
-        Map<Integer,TabItem> oldItems = new HashMap<>();
-        oldItems.putAll(this.items);
+        Map<Integer, TabItem> oldItems = new HashMap<>(this.items);
         update(oldItems, items);
         return oldItems;
     }
@@ -213,20 +215,22 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
     }
 
     private void update(Map<Integer,TabItem> oldItems, Map<Integer,TabItem> items, boolean isBatch) {
+
         if (this.batchEnabled && !isBatch) {
             this.items.putAll(items);
             return;
         }
 
         Map<Integer,TabItem> newItems = putAll(items);
+
         Packets.send(this.player, getUpdate(oldItems, newItems));
     }
 
-    private List<WrapperPlayServerPlayerInfo> getUpdate(Map<Integer,TabItem> oldItems, Map<Integer,TabItem> newItems) {
+    private List<PacketWrapper<?>> getUpdate(Map<Integer,TabItem> oldItems, Map<Integer,TabItem> newItems) {
         List<WrapperPlayServerPlayerInfo.PlayerData> removePlayer = new ArrayList<>();
-        List<WrapperPlayServerPlayerInfo.PlayerData> addPlayer = new ArrayList<>();
-        List<WrapperPlayServerPlayerInfo.PlayerData> displayChanged = new ArrayList<>();
-        List<WrapperPlayServerPlayerInfo.PlayerData> pingUpdated = new ArrayList<>();
+        List<WrapperPlayServerPlayerInfoUpdate.PlayerInfo> addPlayer = new ArrayList<>();
+        List<WrapperPlayServerPlayerInfoUpdate.PlayerInfo> displayChanged = new ArrayList<>();
+        List<WrapperPlayServerPlayerInfoUpdate.PlayerInfo> pingUpdated = new ArrayList<>();
 
         for (Entry<Integer, TabItem> entry : newItems.entrySet()) {
             int index = entry.getKey();
@@ -245,25 +249,25 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
             if (skinChanged) {
                 if (oldItem != null)
                     removePlayer.add(getPlayerInfoData(index, oldItem));
-                addPlayer.add(getPlayerInfoData(index, newItem));
+                addPlayer.add(getPlayerInfoUpdateData(index, newItem));
             } else if (pingChanged) {
-                pingUpdated.add(getPlayerInfoData(index, newItem));
+                pingUpdated.add(getPlayerInfoUpdateData(index, newItem));
             }
 
             if (textChanged)
-                displayChanged.add(getPlayerInfoData(index, newItem));
+                displayChanged.add(getPlayerInfoUpdateData(index, newItem));
         }
 
-        List<WrapperPlayServerPlayerInfo> result = new ArrayList<>(4);
+        List<PacketWrapper<?>> result = new ArrayList<>(4);
 
         if (removePlayer.size() > 0 || addPlayer.size() > 0) {
             result.add(Packets.getPacket(WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER, removePlayer));
-            result.add(Packets.getPacket(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, addPlayer));
+            result.add(Packets.getPacket(WrapperPlayServerPlayerInfoUpdate.Action.ADD_PLAYER, addPlayer));
         }
         if (displayChanged.size() > 0)
-            result.add(Packets.getPacket(WrapperPlayServerPlayerInfo.Action.UPDATE_DISPLAY_NAME, displayChanged));
+            result.add(Packets.getPacketUpdate(WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_DISPLAY_NAME, displayChanged));
         if (pingUpdated.size() > 0)
-            result.add(Packets.getPacket(WrapperPlayServerPlayerInfo.Action.UPDATE_LATENCY, pingUpdated));
+            result.add(Packets.getPacket(WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_LATENCY, pingUpdated));
 
         return result;
     }
@@ -286,6 +290,26 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
         }
 
         return new WrapperPlayServerPlayerInfo.PlayerData(displayName == null ? null : Component.text(displayName), profile, GameMode.ADVENTURE , ping);
+    }
+
+    private WrapperPlayServerPlayerInfoUpdate.PlayerInfo getPlayerInfoUpdateData(int index, TabItem item) {
+        UserProfile profile = getGameProfile(index, item);
+        return getPlayerInfoUpdateData(profile, item.getPing(), item.getText());
+    }
+
+    private WrapperPlayServerPlayerInfoUpdate.PlayerInfo getPlayerInfoUpdateData(UserProfile profile, int ping, String displayName) {
+        if (displayName != null) {
+            // min width
+            while (displayName.length() < this.minColumnWidth)
+                displayName += " ";
+
+            // max width
+            if (this.maxColumnWidth > 0)
+                while (displayName.length() > this.maxColumnWidth)
+                    displayName = displayName.substring(0, displayName.length() - 1);
+        }
+
+        return new WrapperPlayServerPlayerInfoUpdate.PlayerInfo(profile, true, ping, GameMode.ADVENTURE, displayName == null ? null : Component.text(displayName), null);
     }
 
     private UserProfile getGameProfile(int index, TabItem item) {
