@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.keenant.tabbed.Tabbed;
 import com.keenant.tabbed.item.BlankTabItem;
 import com.keenant.tabbed.item.TabItem;
-import lombok.*;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -19,11 +18,10 @@ import java.util.logging.Level;
  * It supports some fancy operations like filling a portion of the table
  * in any direction.
  */
-@ToString
 public class TableTabList extends SimpleTabList {
-    @Getter private final int columns;
-    @Getter private final int rows;
-    @Getter private final TableBox box;
+    private final int columns;
+    private final int rows;
+    private final TableBox box;
 
     public TableTabList(Tabbed tabbed, Player player, int columns, int minColumnWidth, int maxColumnWidth) {
         super(tabbed, player, -1, minColumnWidth, maxColumnWidth);
@@ -36,6 +34,16 @@ public class TableTabList extends SimpleTabList {
     public int getMaxItems() {
         return this.columns * this.rows;
     }
+
+    public int getColumns() {
+        return columns;
+    }
+
+    public int getRows() {
+        return rows;
+    }
+
+
 
     @Override
     public TabItem get(int index) {
@@ -290,12 +298,14 @@ public class TableTabList extends SimpleTabList {
     /**
      * Represents a cell in the table.
      */
-    @Data
-    @AllArgsConstructor
-    @EqualsAndHashCode
     public static class TableCell {
         private int column;
         private int row;
+
+        public TableCell(int column, int row) {
+            this.column = column;
+            this.row = row;
+        }
 
         public TableCell add(int columns, int rows) {
             this.column += columns;
@@ -311,15 +321,22 @@ public class TableTabList extends SimpleTabList {
         public String toString() {
             return column + "," + row;
         }
+
+        public int getColumn() {
+            return column;
+        }
+
+        public int getRow() {
+            return row;
+        }
     }
 
     /**
      * Represents an area of the table.
      */
-    @ToString
-    @EqualsAndHashCode
+
     public static class TableBox {
-        @Getter private final List<TableCell> cells;
+        private final List<TableCell> cells;
 
         public TableBox(TableCell topLeft, TableCell bottomRight) {
             int width = bottomRight.getColumn() - topLeft.getColumn();
@@ -332,6 +349,10 @@ public class TableTabList extends SimpleTabList {
             this.cells.add(topLeft.clone().add(width, 0));
             this.cells.add(bottomRight.clone());
             this.cells.add(bottomRight.clone().add(-width, 0));
+        }
+
+        public List<TableCell> getCells() {
+            return cells;
         }
 
         /**

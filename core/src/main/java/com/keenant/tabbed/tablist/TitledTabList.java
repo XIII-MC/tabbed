@@ -1,23 +1,19 @@
 package com.keenant.tabbed.tablist;
 
-import com.comphenix.protocol.PacketType.Play.Server;
-import com.comphenix.protocol.ProtocolLibrary;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import lombok.Getter;
-import lombok.ToString;
+
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerListHeaderAndFooter;
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 
-import java.lang.reflect.InvocationTargetException;
 
 /**
  * A very basic tab list. It doesn't modify the items, only the header/footer.
  */
-@ToString
 public class TitledTabList implements TabList {
-    @Getter protected final Player player;
-    @Getter private String header;
-    @Getter private String footer;
+    protected final Player player;
+    private String header;
+    private String footer;
 
     public TitledTabList(Player player) {
         this.player = player;
@@ -63,13 +59,18 @@ public class TitledTabList implements TabList {
     }
 
     private void updateHeaderFooter() {
-        PacketContainer packet = new PacketContainer(Server.PLAYER_LIST_HEADER_FOOTER);
-        packet.getChatComponents().write(0, WrappedChatComponent.fromText(this.header == null ? "" : this.header));
-        packet.getChatComponents().write(1, WrappedChatComponent.fromText(this.footer == null ? "" : this.footer));
-        try {
-            ProtocolLibrary.getProtocolManager().sendServerPacket(this.player, packet);
-        } catch (InvocationTargetException e) {
-            e.printStackTrace();
-        }
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerPlayerListHeaderAndFooter(Component.text(this.header == null ? "" : this.header), Component.text(this.footer == null ? "" : this.footer)));
+    }
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    public String getFooter() {
+        return footer;
+    }
+
+    public String getHeader() {
+        return header;
     }
 }

@@ -2,19 +2,16 @@ package com.keenant.tabbed.item;
 
 import com.keenant.tabbed.util.Skin;
 import com.keenant.tabbed.util.Skins;
-import lombok.Getter;
-import lombok.ToString;
 
 import java.util.Objects;
 
 /**
  * A tab item with custom text, ping and skin.
  */
-@ToString
 public class TextTabItem implements TabItem {
-    @Getter private String text;
-    @Getter private int ping;
-    @Getter private Skin skin;
+    private String text;
+    private int ping;
+    private Skin skin;
 
     private String newText;
     private int newPing;
@@ -77,4 +74,21 @@ public class TextTabItem implements TabItem {
         TextTabItem other = (TextTabItem) object;
         return this.text.equals(other.getText()) && this.skin.equals(other.getSkin()) && this.ping == other.getPing();
     }
+
+    @Override
+    public String getText() {
+        return text;
+    }
+
+    @Override
+    public int getPing() {
+        return ping;
+    }
+
+    @Override
+    public Skin getSkin() {
+        return skin;
+    }
+
+
 }

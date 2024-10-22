@@ -7,6 +7,7 @@ public class TabbedPlugin extends JavaPlugin {
   @Override
   public void onLoad() {
     getServer().getConsoleSender().sendMessage(ChatColor.GREEN + "Tabbed library is ready to be used...");
+
   }
 
   @Override

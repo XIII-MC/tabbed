@@ -1,8 +1,8 @@
 package com.keenant.tabbed.tablist;
 
-import com.keenant.tabbed.item.TabItem;
 import com.keenant.tabbed.Tabbed;
 import com.keenant.tabbed.item.PlayerTabItem;
+import com.keenant.tabbed.item.TabItem;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;

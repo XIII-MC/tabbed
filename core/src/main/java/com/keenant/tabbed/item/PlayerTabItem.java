@@ -1,23 +1,21 @@
 package com.keenant.tabbed.item;
 
-import com.keenant.tabbed.util.Reflection;
+import com.github.retrooper.packetevents.PacketEvents;
 import com.keenant.tabbed.util.Skin;
 import com.keenant.tabbed.util.Skins;
-import lombok.Getter;
-import lombok.ToString;
+import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 
 /**
  * A tab item that represents a player.
  */
-@ToString
 public class PlayerTabItem implements TabItem {
-    @Getter private final Player player;
-    @Getter private final PlayerProvider<String> textProvider;
-    @Getter private final PlayerProvider<Skin> skinProvider;
-    @Getter private String text;
-    @Getter private int ping;
-    @Getter private Skin skin;
+    private final Player player;
+    private final PlayerProvider<String> textProvider;
+    private final PlayerProvider<Skin> skinProvider;
+    private String text;
+    private int ping;
+    private Skin skin;
 
     public PlayerTabItem(Player player, PlayerProvider<String> textProvider, PlayerProvider<Skin> skinProvider) {
         this.player = player;
@@ -73,41 +71,16 @@ public class PlayerTabItem implements TabItem {
     }
 
     private int getNewPing() {
-        try {
-            Object craftPlayer = Reflection.getHandle(this.player);
-            return craftPlayer.getClass().getDeclaredField("ping").getInt(craftPlayer);
-        } catch (Exception e) {
-            throw new RuntimeException("couldn't get player ping", e);
-        }
+        return PacketEvents.getAPI().getPlayerManager().getPing(player);
     }
 
-    private static PlayerProvider<String> NAME_PROVIDER = new PlayerProvider<String>() {
-        @Override
-        public String get(Player player) {
-            return player.getName();
-        }
-    };
+    private static final PlayerProvider<String> NAME_PROVIDER = HumanEntity::getName;
 
-    private static PlayerProvider<String> DISPLAY_NAME_PROVIDER = new PlayerProvider<String>() {
-        @Override
-        public String get(Player player) {
-            return player.getDisplayName();
-        }
-    };
+    private static final PlayerProvider<String> DISPLAY_NAME_PROVIDER = Player::getDisplayName;
 
-    private static PlayerProvider<String> LIST_NAME_PROVIDER = new PlayerProvider<String>() {
-        @Override
-        public String get(Player player) {
-            return player.getPlayerListName();
-        }
-    };
+    private static final PlayerProvider<String> LIST_NAME_PROVIDER = Player::getPlayerListName;
 
-    private static PlayerProvider<Skin> SKIN_PROVIDER = new PlayerProvider<Skin>() {
-        @Override
-        public Skin get(Player player) {
-            return Skins.getPlayer(player);
-        }
-    };
+    private static final PlayerProvider<Skin> SKIN_PROVIDER = Skins::getPlayer;
 
     public interface PlayerProvider<T> {
         T get(Player player);
@@ -119,5 +92,23 @@ public class PlayerTabItem implements TabItem {
             return false;
         PlayerTabItem other = (PlayerTabItem) object;
         return this.text.equals(other.getText()) && this.skin.equals(other.getSkin()) && this.ping == other.getPing();
+    }
+
+    public Player getPlayer() {
+        return player;
+    }
+
+    public String getText() {
+        return text;
+    }
+
+    @Override
+    public Skin getSkin() {
+        return skin;
+    }
+
+    @Override
+    public int getPing() {
+        return ping;
     }
 }

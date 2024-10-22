@@ -1,29 +1,23 @@
 package com.keenant.tabbed.tablist;
 
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.EnumWrappers.NativeGameMode;
-import com.comphenix.protocol.wrappers.EnumWrappers.PlayerInfoAction;
-import com.comphenix.protocol.wrappers.PlayerInfoData;
-import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import com.comphenix.protocol.wrappers.WrappedGameProfile;
+import com.github.retrooper.packetevents.protocol.player.GameMode;
+import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
 import com.google.common.base.Preconditions;
 import com.keenant.tabbed.Tabbed;
 import com.keenant.tabbed.item.TabItem;
 import com.keenant.tabbed.util.Packets;
 import com.keenant.tabbed.util.Skin;
-import com.keenant.tabbed.util.Skins;
-import lombok.Getter;
-import lombok.ToString;
+
+import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 
 import java.util.*;
 import java.util.Map.Entry;
-import java.util.logging.Level;
 
 /**
  * A simple implementation of a custom tab list that supports batch updates.
  */
-@ToString(exclude = "tabbed")
 public class SimpleTabList extends TitledTabList implements CustomTabList {
     public static int MAXIMUM_ITEMS = 4 * 20; // client maximum is 4x20 (4 columns, 20 rows)
 
@@ -33,10 +27,10 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
     private final int minColumnWidth;
     private final int maxColumnWidth;
 
-    @Getter boolean batchEnabled;
+    private boolean batchEnabled;
     private final Map<Integer,TabItem> clientItems;
 
-    private static final Map<Skin, Map<Integer, WrappedGameProfile>> PROFILE_INDEX_CACHE = new HashMap<>();
+    private static final Map<Skin, Map<Integer, UserProfile>> PROFILE_INDEX_CACHE = new HashMap<>();
 
     public SimpleTabList(Tabbed tabbed, Player player, int maxItems, int minColumnWidth, int maxColumnWidth) {
         super(player);
@@ -228,11 +222,11 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
         Packets.send(this.player, getUpdate(oldItems, newItems));
     }
 
-    private List<PacketContainer> getUpdate(Map<Integer,TabItem> oldItems, Map<Integer,TabItem> newItems) {
-        List<PlayerInfoData> removePlayer = new ArrayList<>();
-        List<PlayerInfoData> addPlayer = new ArrayList<>();
-        List<PlayerInfoData> displayChanged = new ArrayList<>();
-        List<PlayerInfoData> pingUpdated = new ArrayList<>();
+    private List<WrapperPlayServerPlayerInfo> getUpdate(Map<Integer,TabItem> oldItems, Map<Integer,TabItem> newItems) {
+        List<WrapperPlayServerPlayerInfo.PlayerData> removePlayer = new ArrayList<>();
+        List<WrapperPlayServerPlayerInfo.PlayerData> addPlayer = new ArrayList<>();
+        List<WrapperPlayServerPlayerInfo.PlayerData> displayChanged = new ArrayList<>();
+        List<WrapperPlayServerPlayerInfo.PlayerData> pingUpdated = new ArrayList<>();
 
         for (Entry<Integer, TabItem> entry : newItems.entrySet()) {
             int index = entry.getKey();
@@ -260,26 +254,26 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
                 displayChanged.add(getPlayerInfoData(index, newItem));
         }
 
-        List<PacketContainer> result = new ArrayList<>(4);
+        List<WrapperPlayServerPlayerInfo> result = new ArrayList<>(4);
 
         if (removePlayer.size() > 0 || addPlayer.size() > 0) {
-            result.add(Packets.getPacket(PlayerInfoAction.REMOVE_PLAYER, removePlayer));
-            result.add(Packets.getPacket(PlayerInfoAction.ADD_PLAYER, addPlayer));
+            result.add(Packets.getPacket(WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER, removePlayer));
+            result.add(Packets.getPacket(WrapperPlayServerPlayerInfo.Action.ADD_PLAYER, addPlayer));
         }
         if (displayChanged.size() > 0)
-            result.add(Packets.getPacket(PlayerInfoAction.UPDATE_DISPLAY_NAME, displayChanged));
+            result.add(Packets.getPacket(WrapperPlayServerPlayerInfo.Action.UPDATE_DISPLAY_NAME, displayChanged));
         if (pingUpdated.size() > 0)
-            result.add(Packets.getPacket(PlayerInfoAction.UPDATE_LATENCY, pingUpdated));
+            result.add(Packets.getPacket(WrapperPlayServerPlayerInfo.Action.UPDATE_LATENCY, pingUpdated));
 
         return result;
     }
 
-    private PlayerInfoData getPlayerInfoData(int index, TabItem item) {
-        WrappedGameProfile profile = getGameProfile(index, item);
+    private WrapperPlayServerPlayerInfo.PlayerData getPlayerInfoData(int index, TabItem item) {
+        UserProfile profile = getGameProfile(index, item);
         return getPlayerInfoData(profile, item.getPing(), item.getText());
     }
 
-    private PlayerInfoData getPlayerInfoData(WrappedGameProfile profile, int ping, String displayName) {
+    private WrapperPlayServerPlayerInfo.PlayerData getPlayerInfoData(UserProfile profile, int ping, String displayName) {
         if (displayName != null) {
             // min width
             while (displayName.length() < this.minColumnWidth)
@@ -291,24 +285,28 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
                     displayName = displayName.substring(0, displayName.length() - 1);
         }
 
-        return new PlayerInfoData(profile, ping, NativeGameMode.SURVIVAL, displayName == null ? null : WrappedChatComponent.fromText(displayName));
+        return new WrapperPlayServerPlayerInfo.PlayerData(displayName == null ? null : Component.text(displayName), profile, GameMode.ADVENTURE , ping);
     }
 
-    private WrappedGameProfile getGameProfile(int index, TabItem item) {
-        Skin skin = item.getSkin();
+    private UserProfile getGameProfile(int index, TabItem item) {
+        final Skin skin = item.getSkin();
         if (!PROFILE_INDEX_CACHE.containsKey(skin)) // Cached by skins, so if you change the skins a lot, it still works while being efficient.
             PROFILE_INDEX_CACHE.put(skin, new HashMap<>());
-        Map<Integer, WrappedGameProfile> indexCache = PROFILE_INDEX_CACHE.get(skin);
+        final Map<Integer, UserProfile> indexCache = PROFILE_INDEX_CACHE.get(skin);
 
         if (!indexCache.containsKey(index)) { // Profile is not cached, generate and cache one.
-            String name = String.format("%03d", index) + "|UpdateMC"; // Starts with 00 so they are sorted in alphabetical order and appear in the right order.
-            UUID uuid = UUID.nameUUIDFromBytes(name.getBytes());
+            final String name = String.format("%03d", index) + "|UpdateMC"; // Starts with 00 so they are sorted in alphabetical order and appear in the right order.
+            final UUID uuid = UUID.nameUUIDFromBytes(name.getBytes());
 
-            WrappedGameProfile profile = new WrappedGameProfile(uuid, name); // Create a profile to cache by skin and index.
-            profile.getProperties().put(Skin.TEXTURE_KEY, item.getSkin().getProperty());
+            final UserProfile profile = new UserProfile(uuid, name); // Create a profile to cache by skin and index.
+            profile.setTextureProperties(Collections.singletonList(item.getSkin().getProperty()));
             indexCache.put(index, profile); // Cache the profile.
         }
 
         return indexCache.get(index);
+    }
+
+    public boolean getBatchEnabled() {
+        return batchEnabled;
     }
 }

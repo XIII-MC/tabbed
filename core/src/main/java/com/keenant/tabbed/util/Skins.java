@@ -1,7 +1,7 @@
 package com.keenant.tabbed.util;
 
-import com.comphenix.protocol.wrappers.WrappedGameProfile;
-import com.comphenix.protocol.wrappers.WrappedSignedProperty;
+import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.google.common.base.Charsets;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -154,8 +154,8 @@ public class Skins {
      * @return
      */
     public static Skin getPlayer(Player player) {
-        WrappedSignedProperty property = DEFAULT_SKIN.getProperty();
-        Collection<WrappedSignedProperty> properties = WrappedGameProfile.fromPlayer(player).getProperties().get(Skin.TEXTURE_KEY);
+        TextureProperty property = DEFAULT_SKIN.getProperty();
+        Collection<TextureProperty> properties = PacketEvents.getAPI().getPlayerManager().getUser(player).getProfile().getTextureProperties();
         if (properties != null && properties.size() > 0)
             property = properties.iterator().next();
         return new Skin(property);
@@ -191,7 +191,7 @@ public class Skins {
     private static Skin downloadSkin(String uuid) {
         uuid = addUuidDashes(uuid);
 
-        WrappedSignedProperty property = null;
+        TextureProperty property = null;
 
         JSONObject json;
         try {
@@ -209,7 +209,7 @@ public class Skins {
             String value = (String) jsonObject.get("value");
             String signature = (String) jsonObject.get("signature");
             if (name.equals(Skin.TEXTURE_KEY))
-                property = new WrappedSignedProperty(name, value, signature);
+                property = new TextureProperty(name, value, signature);
         }
 
         if (property == null)
@@ -229,4 +229,5 @@ public class Skins {
         URLConnection connection = url.openConnection();
         return CharStreams.toString(new InputStreamReader(connection.getInputStream(), Charsets.UTF_8));
     }
+
 }

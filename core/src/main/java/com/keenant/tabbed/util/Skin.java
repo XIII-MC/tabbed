@@ -1,25 +1,24 @@
 package com.keenant.tabbed.util;
 
-import com.comphenix.protocol.wrappers.WrappedSignedProperty;
+import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.google.common.base.Preconditions;
-import lombok.Getter;
-import lombok.ToString;
+
 
 import java.util.Objects;
 
 /**
  * Represents the skin/avatar of a tab item.
  */
-@ToString
+
 public class Skin {
-    @Getter private final WrappedSignedProperty property;
+    private final TextureProperty property;
     public static final String TEXTURE_KEY = "textures";
 
     public Skin(String value, String signature) {
-        this(new WrappedSignedProperty(TEXTURE_KEY, value, signature));
+        this(new TextureProperty(TEXTURE_KEY, value, signature));
     }
 
-    public Skin(WrappedSignedProperty property) {
+    public Skin(TextureProperty property) {
         Preconditions.checkArgument(property.getName().equals(TEXTURE_KEY));
         this.property = property;
     }
@@ -35,5 +34,9 @@ public class Skin {
             return sign && value;
         }
         return false;
+    }
+
+    public TextureProperty getProperty() {
+        return property;
     }
 }
