@@ -3,7 +3,6 @@ package com.keenant.tabbed.util;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.google.common.base.Preconditions;
 
-
 import java.util.Objects;
 
 /**

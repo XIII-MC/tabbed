@@ -11,7 +11,6 @@ import com.keenant.tabbed.Tabbed;
 import com.keenant.tabbed.item.TabItem;
 import com.keenant.tabbed.util.Packets;
 import com.keenant.tabbed.util.Skin;
-
 import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 
