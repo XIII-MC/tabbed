@@ -2,8 +2,8 @@ package com.keenant.tabbed.tablist;
 
 
 import com.github.retrooper.packetevents.PacketEvents;
+import com.github.retrooper.packetevents.util.adventure.AdventureSerializer;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerListHeaderAndFooter;
-import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 
 
@@ -59,7 +59,7 @@ public class TitledTabList implements TabList {
     }
 
     private void updateHeaderFooter() {
-        PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerPlayerListHeaderAndFooter(Component.text(this.header == null ? "" : this.header), Component.text(this.footer == null ? "" : this.footer)));
+        PacketEvents.getAPI().getPlayerManager().sendPacket(player, new WrapperPlayServerPlayerListHeaderAndFooter(AdventureSerializer.fromLegacyFormat(this.header == null ? "" : this.header), AdventureSerializer.fromLegacyFormat(this.footer == null ? "" : this.footer)));
     }
 
     public Player getPlayer() {
