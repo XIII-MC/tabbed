@@ -3,6 +3,7 @@ package com.keenant.tabbed.tablist;
 import com.github.retrooper.packetevents.protocol.player.GameMode;
 import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
+import com.github.retrooper.packetevents.util.adventure.AdventureSerializer;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoRemove;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
@@ -11,7 +12,6 @@ import com.keenant.tabbed.Tabbed;
 import com.keenant.tabbed.item.TabItem;
 import com.keenant.tabbed.util.Packets;
 import com.keenant.tabbed.util.Skin;
-import net.kyori.adventure.text.Component;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -309,7 +309,7 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
                     displayName = displayName.substring(0, displayName.length() - 1);
         }
 
-        return new WrapperPlayServerPlayerInfoUpdate.PlayerInfo(profile, true, ping, GameMode.ADVENTURE, displayName == null ? null : Component.text(displayName), null);
+        return new WrapperPlayServerPlayerInfoUpdate.PlayerInfo(profile, true, ping, GameMode.ADVENTURE, displayName == null ? null : AdventureSerializer.fromLegacyFormat(displayName), null);
     }
 
     private UserProfile getGameProfile(int index, TabItem item) {
