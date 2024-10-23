@@ -45,7 +45,9 @@ public class Packets {
         return new WrapperPlayServerPlayerInfoUpdate(EnumSet.of(
                 WrapperPlayServerPlayerInfoUpdate.Action.ADD_PLAYER,
                 WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_LISTED,
-                action
+                WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_LATENCY,
+                WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_DISPLAY_NAME,
+                WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_GAME_MODE
 
         ), data);
     }
