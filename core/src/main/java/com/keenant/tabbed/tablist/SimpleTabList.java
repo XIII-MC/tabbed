@@ -1,9 +1,10 @@
 package com.keenant.tabbed.tablist;
 
 import com.github.retrooper.packetevents.protocol.player.GameMode;
+import com.github.retrooper.packetevents.protocol.player.TextureProperty;
 import com.github.retrooper.packetevents.protocol.player.UserProfile;
 import com.github.retrooper.packetevents.wrapper.PacketWrapper;
-import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfo;
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoRemove;
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerPlayerInfoUpdate;
 import com.google.common.base.Preconditions;
 import com.keenant.tabbed.Tabbed;
@@ -12,7 +13,6 @@ import com.keenant.tabbed.util.Packets;
 import com.keenant.tabbed.util.Skin;
 
 import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.util.*;
@@ -227,7 +227,7 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
     }
 
     private List<PacketWrapper<?>> getUpdate(Map<Integer,TabItem> oldItems, Map<Integer,TabItem> newItems) {
-        List<WrapperPlayServerPlayerInfo.PlayerData> removePlayer = new ArrayList<>();
+        List<PacketWrapper<?>> removePlayer = new ArrayList<>();
         List<WrapperPlayServerPlayerInfoUpdate.PlayerInfo> addPlayer = new ArrayList<>();
         List<WrapperPlayServerPlayerInfoUpdate.PlayerInfo> displayChanged = new ArrayList<>();
         List<WrapperPlayServerPlayerInfoUpdate.PlayerInfo> pingUpdated = new ArrayList<>();
@@ -260,24 +260,25 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
 
         List<PacketWrapper<?>> result = new ArrayList<>(4);
 
-        if (removePlayer.size() > 0 || addPlayer.size() > 0) {
-            result.add(Packets.getPacket(WrapperPlayServerPlayerInfo.Action.REMOVE_PLAYER, removePlayer));
-            result.add(Packets.getPacket(WrapperPlayServerPlayerInfoUpdate.Action.ADD_PLAYER, addPlayer));
+        if (removePlayer != null || addPlayer.size() > 0) {
+            if (removePlayer != null)
+                result.addAll(removePlayer);
+            result.add(Packets.getPacketUpdate(WrapperPlayServerPlayerInfoUpdate.Action.ADD_PLAYER, addPlayer));
         }
         if (displayChanged.size() > 0)
             result.add(Packets.getPacketUpdate(WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_DISPLAY_NAME, displayChanged));
         if (pingUpdated.size() > 0)
-            result.add(Packets.getPacket(WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_LATENCY, pingUpdated));
+            result.add(Packets.getPacketUpdate(WrapperPlayServerPlayerInfoUpdate.Action.UPDATE_LATENCY, pingUpdated));
 
         return result;
     }
 
-    private WrapperPlayServerPlayerInfo.PlayerData getPlayerInfoData(int index, TabItem item) {
+    private WrapperPlayServerPlayerInfoRemove getPlayerInfoData(int index, TabItem item) {
         UserProfile profile = getGameProfile(index, item);
         return getPlayerInfoData(profile, item.getPing(), item.getText());
     }
 
-    private WrapperPlayServerPlayerInfo.PlayerData getPlayerInfoData(UserProfile profile, int ping, String displayName) {
+    private WrapperPlayServerPlayerInfoRemove getPlayerInfoData(UserProfile profile, int ping, String displayName) {
         if (displayName != null) {
             // min width
             while (displayName.length() < this.minColumnWidth)
@@ -289,7 +290,7 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
                     displayName = displayName.substring(0, displayName.length() - 1);
         }
 
-        return new WrapperPlayServerPlayerInfo.PlayerData(displayName == null ? null : Component.text(displayName), profile, GameMode.ADVENTURE , ping);
+        return new WrapperPlayServerPlayerInfoRemove(profile.getUUID());
     }
 
     private WrapperPlayServerPlayerInfoUpdate.PlayerInfo getPlayerInfoUpdateData(int index, TabItem item) {
@@ -323,7 +324,9 @@ public class SimpleTabList extends TitledTabList implements CustomTabList {
             final UUID uuid = UUID.nameUUIDFromBytes(name.getBytes());
 
             final UserProfile profile = new UserProfile(uuid, name); // Create a profile to cache by skin and index.
-            profile.setTextureProperties(Collections.singletonList(item.getSkin().getProperty()));
+            final List<TextureProperty> listTextureProperty = new ArrayList<>();
+            listTextureProperty.add(item.getSkin().getProperty());
+            profile.setTextureProperties(listTextureProperty);
             indexCache.put(index, profile); // Cache the profile.
         }
 
